@@ -1,0 +1,21 @@
+{
+    "name": "techquity/aero-product-leads",
+    "description": "",
+    "require": {
+        "php": "^7.2|^8.0",
+        "aerocommerce/core": "^0",
+        "aerocommerce/admin": "^1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Techquity\\AeroProductLeads\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Techquity\\AeroProductLeads\\ServiceProvider"
+            ]
+        }
+    }
+}
