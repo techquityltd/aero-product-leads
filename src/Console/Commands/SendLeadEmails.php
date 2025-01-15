@@ -1,6 +1,6 @@
 <?php
 
-namespace Techquity\AeroProductLeads\Console;
+namespace Techquity\AeroProductLeads\Commands;
 
 use Illuminate\Console\Command;
 use Techquity\AeroProductLeads\Jobs\SendLeadEmailsJob;
