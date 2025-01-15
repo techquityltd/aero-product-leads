@@ -2,20 +2,25 @@
 
 namespace Techquity\AeroProductLeads;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Aero\Catalog\Models\Tag;
 use Aero\Common\Facades\Settings;
 use Aero\Common\Providers\ModuleServiceProvider;
-use Illuminate\Routing\Router;
+use Aero\Checkout\Http\Responses\CheckoutSuccess;
+use Techquity\AeroProductLeads\Jobs\UpdateLeadCoordinatesJob;
+use Techquity\AeroProductLeads\Models\ProductLead;
+use Techquity\AeroProductLeads\Console\SendLeadEmails;
 
 class ServiceProvider extends ModuleServiceProvider
 {
     public function setup()
     {
         $this->loadSettings();
-
         $this->loadMigrations();
-
         $this->loadViews();
+        $this->loadSchedule();
+        $this->registerCommands();
+        $this->extendCheckoutSuccess();
     }
 
     private function loadMigrations()
@@ -28,13 +33,6 @@ class ServiceProvider extends ModuleServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'product-leads');
     }
 
-    // private function registerMacros()
-    // {
-    //     Location::macro('product-leads', function() {
-    //         return $this->belongsToMany(Career::class);
-    //     });
-    // }
-
     private function loadSettings()
     {
         Settings::group('product-leads', function ($group) {
@@ -42,14 +40,65 @@ class ServiceProvider extends ModuleServiceProvider
             $group->eloquent('lead-tags', Tag::class)
                 ->hint('Tags that are linked to the products you want to build leads for')
                 ->multiple();
-            $group->string('google-maps-api-key');
+            $group->string('google-maps-api-key')
+                ->hint('Requires Geocoding API enabled');
             $group->string('queue')->default('product-leads');
-            $group->integer('first-email')
+            $group->integer('first-email-wait-time')
                 ->hint('The amount of days to wait before sending the first lead email')
                 ->default(7);
-            $group->boolean('fallback-email-enabled')->default(true);
+            $group->integer('second-email-wait-time')
+                ->hint('The amount of days to wait before sending the second lead email')
+                ->default(12);
+            $group->integer('store-radius')
+                ->hint('Radius in miles to search for the nearest store location.')
+                ->default(20);
+            $group->boolean('fallback-email-enabled')
+                ->hint('If no store locations can be found for an order, send to a fallback email instead.')
+                ->default(true);
             $group->string('fallback-email')
-                ->hint('What email do you want the fallback leads to go too?');
+                ->hint('Email you want the fallback leads to go to');
+        });
+    }
+
+    private function registerCommands()
+    {
+        // Register commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SendLeadEmails::class,
+            ]);
+        }
+    }
+
+    private function extendCheckoutSuccess()
+    {
+        CheckoutSuccess::extend(function ($builder) {
+            $builder->afterComplete(function ($checkout, $order) {
+                $leadTags = setting('product-leads.lead-tags');
+
+                foreach ($order->items as $item) {
+                    if ($item->product && $item->product->tags->pluck('id')->intersect($leadTags)->isNotEmpty()) {
+                        ProductLead::create([
+                            'order_id' => $order->id,
+                            'order_item_id' => $item->id,
+                        ]);
+                    }
+                }
+
+                // dispatch(new UpdateLeadCoordinatesJob());
+            });
+        });
+    }
+
+    private function loadSchedule()
+    {
+        $this->app->booted(function () {
+            $schedule = $this->app->make(Schedule::class);
+
+            if (setting('product-leads.enabled')) {
+                $schedule->job(new UpdateLeadCoordinatesJob())->everyThirtyMinutes();
+                $schedule->command('product-leads:send-emails')->dailyAt('09:00');
+            }
         });
     }
 }
