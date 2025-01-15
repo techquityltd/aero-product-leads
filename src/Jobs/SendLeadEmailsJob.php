@@ -21,15 +21,12 @@ class SendLeadEmailsJob implements ShouldQueue
     public function __construct()
     {
         $this->locationService = app(LocationService::class);
-
-        $this->onQueue(setting('product-leads.queue'));
     }
 
     public function handle()
     {
-        $radius = setting('product-leads.radius');
-        $firstWaitTime = setting('product-leads.first-email-wait-time');
-        $secondWaitTime = setting('product-leads.second-email-wait-time');
+        $radius = setting('product-leads.store-radius');
+        $emailWaitTime = setting('product-leads.email-wait-time');
         $fallbackEnabled = setting('product-leads.fallback-email-enabled');
         $fallbackEmail = setting('product-leads.fallback-email');
 
@@ -38,19 +35,7 @@ class SendLeadEmailsJob implements ShouldQueue
         // Handle leads for the first email
         $this->processEmails(
             $radius,
-            $now->copy()->subDays($firstWaitTime),
-            'email1_sent_at',
-            'first',
-            $fallbackEnabled,
-            $fallbackEmail
-        );
-
-        // Handle leads for the second email
-        $this->processEmails(
-            $radius,
-            $now->copy()->subDays($secondWaitTime),
-            'email2_sent_at',
-            'second',
+            $now->copy()->subDays($emailWaitTime),
             $fallbackEnabled,
             $fallbackEmail
         );
@@ -59,19 +44,17 @@ class SendLeadEmailsJob implements ShouldQueue
     protected function processEmails(
         int $radius,
         \Carbon\Carbon $cutoffDate,
-        string $emailSentColumn,
-        string $emailType,
         bool $fallbackEnabled,
         ?string $fallbackEmail
     ) {
-        $leads = ProductLead::whereNull($emailSentColumn)
+        $leads = ProductLead::whereNull('email_sent_at')
             ->where('created_at', '<=', $cutoffDate)
             ->get();
 
         foreach ($leads as $lead) {
             $nearestStoreEmail = $this->locationService->findNearestStore(
-                $lead->lat,
-                $lead->lng,
+                $lead->latitude,
+                $lead->longitude,
                 $radius
             );
 
@@ -84,10 +67,10 @@ class SendLeadEmailsJob implements ShouldQueue
 
             // Send the email if a recipient was determined
             if ($recipientEmail) {
-                Mail::to($recipientEmail)->send(new LeadEmail($lead, $emailType));
+                Mail::to($recipientEmail)->send(new LeadEmail($lead));
 
                 $lead->update([
-                    $emailSentColumn => now(),
+                    'email_sent_at' => now(),
                 ]);
             }
         }

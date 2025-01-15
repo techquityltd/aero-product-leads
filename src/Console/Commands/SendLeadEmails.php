@@ -12,8 +12,6 @@ class SendLeadEmails extends Command
 
     public function handle()
     {
-        $this->info('Dispatching the lead emails job...');
-        dispatch(new SendLeadEmailsJob());
-        $this->info('Lead emails job dispatched successfully.');
+        dispatch(new SendLeadEmailsJob())->onQueue(setting('product-leads.queue'));
     }
 }

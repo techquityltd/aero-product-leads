@@ -11,15 +11,14 @@ class ProductLead extends Model
     protected $fillable = [
         'order_id',
         'order_item_id',
-        'lat',
-        'lng',
-        'email1_sent_at',
-        'email2_sent_at',
+        'postcode',
+        'latitude',
+        'longitude',
+        'email_sent_at',
     ];
 
     protected $casts = [
-        'email1_sent_at' => 'datetime',
-        'email2_sent_at' => 'datetime',
+        'email_sent_at' => 'datetime',
     ];
 
     /**

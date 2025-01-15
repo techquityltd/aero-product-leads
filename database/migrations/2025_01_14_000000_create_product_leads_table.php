@@ -1,5 +1,6 @@
 <?php
 
+use Aero\Cart\Models\Order;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,13 +15,16 @@ return new class extends Migration {
     {
         Schema::create('product_leads', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade'); // Links to orders table
-            $table->foreignId('order_item_id')->nullable()->constrained()->onDelete('set null'); // Links to order items table
+            $table->unsignedInteger('order_id');
+            $table->unsignedInteger('order_item_id');
+            $table->string('postcode');
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
-            $table->timestamp('email1_sent_at')->nullable();
-            $table->timestamp('email2_sent_at')->nullable();
+            $table->timestamp('email_sent_at')->nullable();
             $table->timestamps();
+
+            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            $table->foreign('order_item_id')->references('id')->on('order_items')->onDelete('cascade');
         });
     }
 

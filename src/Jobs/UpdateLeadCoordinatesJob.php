@@ -20,14 +20,11 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
     public function __construct()
     {
         $this->googleGeocodingService = app(GoogleGeocodingService::class);
-
-        // Dynamically assign the queue name from settings
-        $this->onQueue(setting('product-leads.queue'));
     }
 
     public function handle()
     {
-        $leads = ProductLead::whereNull('lat')->whereNull('lng')->get();
+        $leads = ProductLead::whereNull('latitude')->whereNull('longitude')->get();
 
         foreach ($leads as $lead) {
             try {
@@ -35,8 +32,8 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
 
                 if ($coordinates) {
                     $lead->update([
-                        'lat' => $coordinates['lat'],
-                        'lng' => $coordinates['lng'],
+                        'latitude' => $coordinates['latitude'],
+                        'longitude' => $coordinates['longitude'],
                     ]);
                 } else {
                     Log::warning("Coordinates not found for postcode: {$lead->postcode}");

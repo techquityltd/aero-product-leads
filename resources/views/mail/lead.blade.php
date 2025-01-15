@@ -1,7 +1,7 @@
 @extends('mail.layout')
 
 @section('content')
-    <h1>{{ $emailType === 'first' ? 'New Product Lead' : 'Follow-up Product Lead' }}</h1>
+    <h1>New Product Lead</h1>
 
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="input ">
         <tbody>
@@ -15,7 +15,7 @@
         </tr>
         <tr>
             <td align="left">
-                <label>Customer Address</label>
+                <label>Customer Address:</label>
             </td>
             <td align="left">
                 {{ $customerAddress }}
@@ -31,19 +31,19 @@
         </tr>
         <tr>
             <td align="left">
-                <label>Order ID:</label>
+                <label>Order Reference:</label>
             </td>
             <td align="left">
-                {{ $lead->order_id }}
+                {{ $lead->order->reference }}
             </td>
         </tr>
         <tr>
-            <p><strong>Product(s):</strong></p>
-            <ul>
-                @foreach($lead->order->orderItems as $orderItem)
-                    <li>{{ $orderItem->name }}</li>
-                @endforeach
-            </ul>
+            <td align="left">
+                <label>Lead Product:</label>
+            </td>
+            <td align="left">
+                {{ $lead->orderItem->name }} (SKU: {{ $lead->orderItem->sku }})
+            </td>
         </tr>
         </tbody>
     </table>

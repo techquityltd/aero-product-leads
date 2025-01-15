@@ -7,6 +7,7 @@ use Aero\Catalog\Models\Tag;
 use Aero\Common\Facades\Settings;
 use Aero\Common\Providers\ModuleServiceProvider;
 use Aero\Checkout\Http\Responses\CheckoutSuccess;
+use Techquity\AeroProductLeads\Console\Commands\UpdateLeadCoordinates;
 use Techquity\AeroProductLeads\Jobs\UpdateLeadCoordinatesJob;
 use Techquity\AeroProductLeads\Models\ProductLead;
 use Techquity\AeroProductLeads\Console\Commands\SendLeadEmails;
@@ -43,12 +44,9 @@ class ServiceProvider extends ModuleServiceProvider
             $group->string('google-maps-api-key')
                 ->hint('Requires Geocoding API enabled');
             $group->string('queue')->default('product-leads');
-            $group->integer('first-email-wait-time')
+            $group->integer('email-wait-time')
                 ->hint('The amount of days to wait before sending the first lead email')
                 ->default(7);
-            $group->integer('second-email-wait-time')
-                ->hint('The amount of days to wait before sending the second lead email')
-                ->default(12);
             $group->integer('store-radius')
                 ->hint('Radius in miles to search for the nearest store location.')
                 ->default(20);
@@ -66,6 +64,7 @@ class ServiceProvider extends ModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SendLeadEmails::class,
+                UpdateLeadCoordinates::class
             ]);
         }
     }
@@ -81,6 +80,7 @@ class ServiceProvider extends ModuleServiceProvider
                         ProductLead::create([
                             'order_id' => $order->id,
                             'order_item_id' => $item->id,
+                            'postcode' => $order->shippingAddress->postcode,
                         ]);
                     }
                 }
