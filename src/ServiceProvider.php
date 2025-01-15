@@ -9,7 +9,7 @@ use Aero\Common\Providers\ModuleServiceProvider;
 use Aero\Checkout\Http\Responses\CheckoutSuccess;
 use Techquity\AeroProductLeads\Jobs\UpdateLeadCoordinatesJob;
 use Techquity\AeroProductLeads\Models\ProductLead;
-use Techquity\AeroProductLeads\Commands\SendLeadEmails;
+use Techquity\AeroProductLeads\Console\Commands\SendLeadEmails;
 
 class ServiceProvider extends ModuleServiceProvider
 {
