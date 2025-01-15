@@ -39,13 +39,13 @@ class ServiceProvider extends ModuleServiceProvider
         Settings::group('product-leads', function ($group) {
             $group->boolean('enabled')->default(true);
             $group->eloquent('lead-tags', Tag::class)
-                ->hint('Tags that are linked to the products you want to build leads for')
+                ->hint('Tags that are linked to the products you want to build leads for.')
                 ->multiple();
             $group->string('google-maps-api-key')
-                ->hint('Requires Geocoding API enabled');
+                ->hint('Requires Geocoding API enabled.');
             $group->string('queue')->default('product-leads');
             $group->integer('email-wait-time')
-                ->hint('The amount of days to wait before sending the first lead email')
+                ->hint('The amount of days to wait before sending the first lead email.')
                 ->default(7);
             $group->integer('store-radius')
                 ->hint('Radius in miles to search for the nearest store location.')
@@ -54,7 +54,7 @@ class ServiceProvider extends ModuleServiceProvider
                 ->hint('If no store locations can be found for an order, send to a fallback email instead.')
                 ->default(true);
             $group->string('fallback-email')
-                ->hint('Email you want the fallback leads to go to');
+                ->hint('Email you want the fallback leads to go to.');
         });
     }
 
