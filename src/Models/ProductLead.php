@@ -15,6 +15,7 @@ class ProductLead extends Model
         'latitude',
         'longitude',
         'email_sent_at',
+        'location_email',
     ];
 
     protected $casts = [
