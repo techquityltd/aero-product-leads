@@ -55,6 +55,8 @@ class ServiceProvider extends ModuleServiceProvider
                 ->default(true);
             $group->string('fallback-email')
                 ->hint('Email you want the fallback leads to go to.');
+            $group->string('send-emails-cron')->default('0 9 * * *');
+            $group->string('update-coordinates-cron')->default('*/30 * * * *');
         });
     }
 
@@ -96,8 +98,8 @@ class ServiceProvider extends ModuleServiceProvider
             $schedule = $this->app->make(Schedule::class);
 
             if (setting('product-leads.enabled')) {
-                $schedule->job(new UpdateLeadCoordinatesJob())->everyThirtyMinutes();
-                $schedule->command('product-leads:send-emails')->dailyAt('09:00');
+                $schedule->job(new UpdateLeadCoordinatesJob())->cron(setting('product-leads.update-coordinates-cron'));
+                $schedule->command('product-leads:send-emails')->cron(setting('product-leads.send-emails-cron'));
             }
         });
     }
