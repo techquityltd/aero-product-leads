@@ -71,7 +71,7 @@ class SendLeadEmailsJob implements ShouldQueue
 
                 $lead->update([
                     'email_sent_at' => now(),
-                    'location_email' => $lead
+                    'location_email' => $recipientEmail
                 ]);
             }
         }
