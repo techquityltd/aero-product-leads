@@ -2,7 +2,9 @@
 
 namespace Techquity\AeroProductLeads;
 
+use Closure;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Log;
 use Aero\Catalog\Models\Tag;
 use Aero\Common\Facades\Settings;
 use Aero\Common\Providers\ModuleServiceProvider;
@@ -73,22 +75,52 @@ class ServiceProvider extends ModuleServiceProvider
 
     private function extendCheckoutSuccess()
     {
-        CheckoutSuccess::extend(function ($builder) {
-            $builder->afterComplete(function ($checkout, $order) {
-                $leadTags = setting('product-leads.lead-tags');
+        CheckoutSuccess::extend(static function ($content, Closure $next) {
 
-                foreach ($order->items as $item) {
-                    if ($item->product && $item->product->tags->pluck('id')->intersect($leadTags)->isNotEmpty()) {
+            $leadTags = setting('product-leads.lead-tags');
+    
+            if (empty($leadTags) || !$leadTags->count()) {
+                return $next($content);
+            }
+    
+            $leadTagIds = $leadTags->pluck('id');
+            $order = $content->cart->order();
+    
+            foreach ($order->items as $item) {
+
+                if (!isset($item->buyable, $item->buyable->product)) {
+                    continue;
+                }
+    
+                $product = $item->buyable->product;
+
+                if (!isset($order->shippingAddress) || !$order->shippingAddress->postcode) {
+                    continue;
+                }
+    
+                // Check if the product's tags intersect with the lead-tags
+                if ($product->tags->pluck('id')->intersect($leadTagIds)->isNotEmpty()) {
+                    try {
                         ProductLead::create([
                             'order_id' => $order->id,
                             'order_item_id' => $item->id,
                             'postcode' => $order->shippingAddress->postcode,
                         ]);
+                    } catch (\Exception $e) {
+                        // Log::error('Failed to create product lead', ['error' => $e->getMessage()]);
                     }
                 }
-
-                // dispatch(new UpdateLeadCoordinatesJob());
-            });
+            }
+    
+            // Optionally, dispatch the coordinates update job after creating leads
+            // try {
+            //     dispatch(new UpdateLeadCoordinatesJob());
+            // } catch (\Exception $e) {
+            //     // Log the error but do not interrupt the checkout
+            //     // Log::error('Failed to dispatch UpdateLeadCoordinatesJob', ['error' => $e->getMessage()]);
+            // }
+    
+            return $next($content);
         });
     }
 
