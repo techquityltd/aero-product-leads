@@ -13,6 +13,7 @@ class LeadEmail extends Mailable
 
     public $lead;
     public $emailType;
+    public $customerPhone;
     public $customerName;
     public $customerAddress;
 
@@ -24,9 +25,25 @@ class LeadEmail extends Mailable
     public function __construct(ProductLead $lead)
     {
         $order = $lead->order;
+        $shippingAddress = $order->shippingAddress;
+
         $this->lead = $lead;
-        $this->customerName = $order->shippingAddress->full_name ?? 'Unknown Name';
-        $this->customerAddress = $order->shippingAddress->line_1 ?? 'Unknown Address';
+        $this->customerPhone = $shippingAddress->mobile 
+            ?? $shippingAddress->phone 
+            ?? '';
+
+        $this->customerName = $shippingAddress->full_name ?? 'Unknown Name';
+
+        // Build full address including line_1, line_2, and city
+        $addressParts = array_filter([
+            $shippingAddress->line_1 ?? null,
+            $shippingAddress->line_2 ?? null,
+            $shippingAddress->city ?? null
+        ]);
+
+        $this->customerAddress = !empty($addressParts) 
+            ? implode(', ', $addressParts) 
+            : 'Unknown Address';
     }
 
     /**

@@ -52,6 +52,23 @@ class SendLeadEmailsJob implements ShouldQueue
             ->get();
 
         foreach ($leads as $lead) {
+
+            // Check if latitude or longitude is missing
+            if (!$lead->latitude || !$lead->longitude) {
+                // If either is missing, set the recipient to the fallback email
+                if ($fallbackEnabled && $fallbackEmail) {
+                    $recipientEmail = $fallbackEmail;
+                    Mail::to($recipientEmail)->send(new LeadEmail($lead));
+
+                    // Update the lead with the fallback email
+                    $lead->update([
+                        'email_sent_at' => now(),
+                        'location_email' => $recipientEmail
+                    ]);
+                }
+                continue;
+            }
+
             $nearestStoreEmail = $this->locationService->findNearestStore(
                 $lead->latitude,
                 $lead->longitude,
@@ -67,6 +84,7 @@ class SendLeadEmailsJob implements ShouldQueue
 
             // Send the email if a recipient was determined
             if ($recipientEmail) {
+
                 Mail::to($recipientEmail)->send(new LeadEmail($lead));
 
                 $lead->update([

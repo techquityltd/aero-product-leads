@@ -7,7 +7,7 @@
         <tbody>
         <tr>
             <td align="left">
-                <label>Customer Name:</label>
+                <label>Customer Name: </label>
             </td>
             <td align="left">
                 {{ $customerName }}
@@ -15,7 +15,23 @@
         </tr>
         <tr>
             <td align="left">
-                <label>Customer Address:</label>
+                <label>Customer Email: </label>
+            </td>
+            <td align="left">
+                {{ $lead->order->email }}
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+                <label>Customer Phone: </label>
+            </td>
+            <td align="left">
+                {{ $customerPhone }}
+            </td>
+        </tr>
+        <tr>
+            <td align="left">
+                <label>Customer Address: </label>
             </td>
             <td align="left">
                 {{ $customerAddress }}
@@ -23,7 +39,7 @@
         </tr>
         <tr>
             <td align="left">
-                <label>Customer Postcode:</label>
+                <label>Customer Postcode: </label>
             </td>
             <td align="left">
                 {{ $lead->postcode }}
@@ -31,7 +47,7 @@
         </tr>
         <tr>
             <td align="left">
-                <label>Order Reference:</label>
+                <label>Order Reference: </label>
             </td>
             <td align="left">
                 {{ $lead->order->reference }}
@@ -39,7 +55,7 @@
         </tr>
         <tr>
             <td align="left">
-                <label>Lead Product:</label>
+                <label>Lead Product: </label>
             </td>
             <td align="left">
                 {{ $lead->orderItem->name }} (SKU: {{ $lead->orderItem->sku }})
