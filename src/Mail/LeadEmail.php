@@ -12,10 +12,10 @@ class LeadEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $lead;
-    public $emailType;
     public $customerPhone;
     public $customerName;
     public $customerAddress;
+    protected $subjectLine;
 
     /**
      * Create a new message instance.
@@ -26,6 +26,7 @@ class LeadEmail extends Mailable
     {
         $order = $lead->order;
         $shippingAddress = $order->shippingAddress;
+        $product = $lead->orderItem->buyable->product ?? null;
 
         $this->lead = $lead;
         $this->customerPhone = $shippingAddress->mobile 
@@ -44,6 +45,29 @@ class LeadEmail extends Mailable
         $this->customerAddress = !empty($addressParts) 
             ? implode(', ', $addressParts) 
             : 'Unknown Address';
+
+        $this->subjectLine = $this->determineSubject($product);
+    }
+
+    protected function determineSubject($product)
+    {
+        if (!$product) {
+            return 'New Product Lead';
+        }
+
+        // Get the configured lead-tags from settings
+        $leadTags = setting('product-leads.lead-tags');
+
+        if (!$leadTags || !$leadTags->count()) {
+            return 'New Product Lead';
+        }
+
+        // Find the first matching tag between the product and lead-tags setting
+        $matchingTag = $product->tags->intersect($leadTags)->first();
+
+        return $matchingTag 
+            ? "New {$matchingTag->name}" 
+            : 'New Product Lead';
     }
 
     /**
@@ -53,9 +77,7 @@ class LeadEmail extends Mailable
      */
     public function build()
     {
-        $subject = "New Product Lead: {$this->customerName}";
-
-        return $this->subject($subject)
+        return $this->subject($this->subjectLine)
             ->view('product-leads::mail.lead');
     }
 }
