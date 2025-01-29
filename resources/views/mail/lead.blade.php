@@ -1,7 +1,7 @@
 @extends('mail.layout')
 
 @section('content')
-    <h1>New Product Lead</h1>
+    <h1>New Lead</h1>
 
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="input ">
         <tbody>
