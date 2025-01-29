@@ -20,6 +20,7 @@ return new class extends Migration {
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->timestamp('email_sent_at')->nullable();
+            $table->string('location_email')->nullable();
             $table->timestamps();
 
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
