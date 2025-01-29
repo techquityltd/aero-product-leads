@@ -130,7 +130,7 @@ class ServiceProvider extends ModuleServiceProvider
             $schedule = $this->app->make(Schedule::class);
 
             if (setting('product-leads.enabled')) {
-                $schedule->job(new UpdateLeadCoordinatesJob())->cron(setting('product-leads.update-coordinates-cron'));
+                $schedule->command('product-leads:update-lead')->cron(setting('product-leads.update-coordinates-cron'));
                 $schedule->command('product-leads:send-emails')->cron(setting('product-leads.send-emails-cron'));
             }
         });
