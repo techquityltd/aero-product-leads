@@ -4,7 +4,7 @@ namespace Techquity\AeroProductLeads\ResourceLists;
 
 use Aero\Admin\ResourceLists\AbstractResourceList;
 use Aero\Admin\ResourceLists\ResourceListColumn;
-// use Aero\Admin\ResourceLists\ResourceListSortBy;
+use Aero\Admin\ResourceLists\ResourceListSortBy;
 use Aero\Admin\Traits\IsExtendable;
 use Techquity\AeroProductLeads\Models\ProductLead;
 
@@ -30,7 +30,63 @@ class ProductLeadResourceList extends AbstractResourceList
         return [
 
             ResourceListColumn::create('Order', function ($row) {
-                return $row->order->reference;
+                if ($row->order) {
+                    return view('admin::resource-lists.link', [
+                        'route' => '/admin/orders/'.$row->order->id,
+                        'text' => $row->order->reference,
+                    ]);
+                }
+                return view('admin::resource-lists.placeholder');
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart = $positionStart + $positionIncrement),
+
+            ResourceListColumn::create('Lead Item SKU', function ($row) {
+                if ($row->orderItem) {
+                    return view('admin::resource-lists.link', [
+                        'route' => '/admin/catalog/products/'.$row->orderItem->buyable->id,
+                        'text' => $row->orderItem->sku,
+                    ]);
+                }
+                return view('admin::resource-lists.placeholder');
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart = $positionStart + $positionIncrement),
+
+            ResourceListColumn::create('Location Processed', function ($row) {
+                if (!empty($row->latitude) && !empty($row->longitude)) {
+                    return 'Yes';
+                } else {
+                    return 'No';
+                }
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart = $positionStart + $positionIncrement),
+
+            ResourceListColumn::create('Email Sent', function ($row) {
+                if ($row->email_sent_at) {
+                    return 'Yes';
+                } elseif (!empty($row->latitude) && !empty($row->longitude)) {
+                    return 'Pending';
+                } else {
+                    return 'No';
+                }
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart = $positionStart + $positionIncrement),
+
+            ResourceListColumn::create('Email Sent At', function ($row) {
+                if ($row->email_sent_at) {
+                    return $row->email_sent_at->format(setting('admin.short_date_format'));
+                } else {
+                    return '';
+                }
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart = $positionStart + $positionIncrement),
+
+            ResourceListColumn::create('Location Recipient', function ($row) {
+                return $row->location_email;
             })
             ->addClass('whitespace-no-wrap')
             ->position($positionStart = $positionStart + $positionIncrement),
@@ -39,14 +95,30 @@ class ProductLeadResourceList extends AbstractResourceList
 
     public function handleSearch($search)
     {
-        $this->query->where(static function ($query) use ($search) {
-            $query->where('search_term', 'like', "%{$search}%");
+        $this->query->where(function ($query) use ($search) {
+            $query->where('location_email', 'like', "%{$search}%")
+                  ->orWhereHas('order', function ($orderQuery) use ($search) {
+                      $orderQuery->where('reference', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('orderItem', function ($orderItemQuery) use ($search) {
+                      $orderItemQuery->where('sku', 'like', "%{$search}%");
+                  });
         });
     }
 
     public function sortBys(): array
     {
         return [
+            ResourceListSortBy::create(null, function ($_, $query) {
+                return $query->orderByDesc('order_id');
+            }),
+
+            ResourceListSortBy::create([
+                'email-sent-at-az' => 'Email Sent At New to Old',
+                'email-sent-at-za' => 'Email Sent At Old to New',
+            ], function ($sortBy, $query) {
+                return $sortBy === 'email-sent-at-za' ? $query->orderBy('email_sent_at') : $query->orderByDesc('email_sent_at');
+            }),
         ];
     }
 

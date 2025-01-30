@@ -11,7 +11,6 @@ class ProductLeadController extends Controller
 {
     public function index(ProductLeadResourceList $list, Request $request)
     {
-        dd('TEST');
         return view('admin::resource-lists.index', [
             'list' => $list = $list(),
             'results' => $list->apply($request->all())

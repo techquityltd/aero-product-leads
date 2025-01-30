@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Routing\Router;
 use Aero\Catalog\Models\Tag;
 use Aero\Common\Facades\Settings;
+use Aero\Admin\AdminModule;
 use Aero\Common\Providers\ModuleServiceProvider;
 use Aero\Checkout\Http\Responses\CheckoutSuccess;
 use Techquity\AeroProductLeads\Console\Commands\UpdateLeadCoordinates;
@@ -20,6 +21,7 @@ class ServiceProvider extends ModuleServiceProvider
     public function setup()
     {
         $this->loadRoutes();
+        $this->loadModule();
         $this->loadSettings();
         $this->loadMigrations();
         $this->loadViews();
