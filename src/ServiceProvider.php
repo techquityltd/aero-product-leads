@@ -5,6 +5,7 @@ namespace Techquity\AeroProductLeads;
 use Closure;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Routing\Router;
 use Aero\Catalog\Models\Tag;
 use Aero\Common\Facades\Settings;
 use Aero\Common\Providers\ModuleServiceProvider;
@@ -18,12 +19,18 @@ class ServiceProvider extends ModuleServiceProvider
 {
     public function setup()
     {
+        $this->loadRoutes();
         $this->loadSettings();
         $this->loadMigrations();
         $this->loadViews();
         $this->loadSchedule();
         $this->registerCommands();
         $this->extendCheckoutSuccess();
+    }
+
+    private function loadRoutes()
+    {
+        Router::addAdminRoutes(__DIR__.'/../routes/admin.php');
     }
 
     private function loadMigrations()
@@ -33,7 +40,15 @@ class ServiceProvider extends ModuleServiceProvider
 
     private function loadViews()
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'product-leads');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'productleads');
+    }
+
+    private function loadModule()
+    {
+        AdminModule::create('product_leads')
+            ->title('Product Leads')
+            ->summary('View your stores product leads')
+            ->route('admin.productleads');
     }
 
     private function loadSettings()
