@@ -6,7 +6,10 @@ use Aero\Admin\ResourceLists\AbstractResourceList;
 use Aero\Admin\ResourceLists\ResourceListColumn;
 use Aero\Admin\ResourceLists\ResourceListSortBy;
 use Aero\Admin\Traits\IsExtendable;
+use Techquity\AeroProductLeads\BulkActions\ExportLeadsBulkAction;
 use Techquity\AeroProductLeads\Models\ProductLead;
+use Techquity\AeroProductLeads\ResourceLists\Filters\CreatedAtFilter;
+use Techquity\AeroProductLeads\ResourceLists\Filters\EmailSentAtFilter;
 
 class ProductLeadResourceList extends AbstractResourceList
 {
@@ -15,6 +18,12 @@ class ProductLeadResourceList extends AbstractResourceList
     protected $tableRowClasses = ['group'];
 
     protected $filters = [
+        CreatedAtFilter::class,
+        EmailSentAtFilter::class,
+    ];
+
+    protected $bulkActions = [
+        ExportLeadsBulkAction::class,
     ];
 
     public function __construct(ProductLead $lead)

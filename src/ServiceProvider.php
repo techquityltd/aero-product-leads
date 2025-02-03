@@ -2,6 +2,7 @@
 
 namespace Techquity\AeroProductLeads;
 
+use Aero\Admin\BulkAction;
 use Closure;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Log;
@@ -11,10 +12,12 @@ use Aero\Common\Facades\Settings;
 use Aero\Admin\AdminModule;
 use Aero\Common\Providers\ModuleServiceProvider;
 use Aero\Checkout\Http\Responses\CheckoutSuccess;
+use Techquity\AeroProductLeads\BulkActions\ExportLeadsBulkAction;
 use Techquity\AeroProductLeads\Console\Commands\UpdateLeadCoordinates;
 use Techquity\AeroProductLeads\Jobs\UpdateLeadCoordinatesJob;
 use Techquity\AeroProductLeads\Models\ProductLead;
 use Techquity\AeroProductLeads\Console\Commands\SendLeadEmails;
+use Techquity\AeroProductLeads\ResourceLists\ProductLeadResourceList;
 
 class ServiceProvider extends ModuleServiceProvider
 {
@@ -28,6 +31,7 @@ class ServiceProvider extends ModuleServiceProvider
         $this->loadSchedule();
         $this->registerCommands();
         $this->extendCheckoutSuccess();
+        $this->createBulkActions();
     }
 
     private function loadRoutes()
@@ -151,5 +155,11 @@ class ServiceProvider extends ModuleServiceProvider
                 $schedule->command('product-leads:send-emails')->cron(setting('product-leads.send-emails-cron'));
             }
         });
+    }
+
+    private function createBulkActions()
+    {
+        BulkAction::create(ExportLeadsBulkAction::class, ProductLeadResourceList::class)
+            ->title('Export Leads');
     }
 }
