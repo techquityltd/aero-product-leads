@@ -3,6 +3,7 @@
 namespace Techquity\AeroProductLeads;
 
 use Aero\Admin\BulkAction;
+use Aero\Store\Models\Location;
 use Closure;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Log;
@@ -73,6 +74,9 @@ class ServiceProvider extends ModuleServiceProvider
             $group->integer('store-radius')
                 ->hint('Radius in miles to search for the nearest store location.')
                 ->default(20);
+            $group->eloquent('ignore-locations', Location::class)
+                ->hint('Locations that you do not want to use.')
+                ->multiple();
             $group->boolean('fallback-email-enabled')
                 ->hint('If no store locations can be found for an order, send to a fallback email instead.')
                 ->default(true);
