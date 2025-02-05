@@ -47,7 +47,7 @@ class ServiceProvider extends ModuleServiceProvider
 
     private function loadViews()
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'productleads');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'product-leads');
     }
 
     private function loadModule()
