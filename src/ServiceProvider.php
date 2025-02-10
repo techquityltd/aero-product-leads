@@ -67,7 +67,7 @@ class ServiceProvider extends ModuleServiceProvider
                 ->multiple();
             $group->string('google-maps-api-key')
                 ->hint('Requires Geocoding API enabled.');
-            $group->string('queue')->default('product-leads');
+            $group->string('queue')->default('default');
             $group->integer('email-wait-time')
                 ->hint('The amount of days to wait before sending the first lead email.')
                 ->default(7);
