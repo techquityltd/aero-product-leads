@@ -54,7 +54,7 @@ class ProductLeadResourceList extends AbstractResourceList
                 if ($row->orderItem) {
                     return view('admin::resource-lists.link', [
                         'route' => '/admin/catalog/products/'.$row->orderItem->buyable->id,
-                        'text' => $row->orderItem->sku,
+                        'text' => $row->orderItem->sku . " (" . $row->orderItem->name . ")",
                     ]);
                 }
                 return view('admin::resource-lists.placeholder');
@@ -78,7 +78,7 @@ class ProductLeadResourceList extends AbstractResourceList
                 } elseif (!empty($row->latitude) && !empty($row->longitude)) {
                     return 'Pending';
                 } else {
-                    return 'No';
+                    return '';
                 }
             })
             ->addClass('whitespace-no-wrap')
@@ -96,6 +96,16 @@ class ProductLeadResourceList extends AbstractResourceList
 
             ResourceListColumn::create('Location Recipient', function ($row) {
                 return $row->location_email;
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart = $positionStart + $positionIncrement),
+
+            ResourceListColumn::create('Created At', function ($row) {
+                if ($row->created_at) {
+                    return $row->created_at->format(setting('admin.short_date_format'));
+                } else {
+                    return '';
+                }
             })
             ->addClass('whitespace-no-wrap')
             ->position($positionStart = $positionStart + $positionIncrement),
