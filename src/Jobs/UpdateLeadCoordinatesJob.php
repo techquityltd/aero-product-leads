@@ -24,14 +24,26 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
 
     public function handle()
     {
-        $leads = ProductLead::whereNull('latitude')->whereNull('longitude')->get();
+        // Get leads grouped by order_id where no coordinates exist
+        $leadsByOrder = ProductLead::whereNull('latitude')
+            ->whereNull('longitude')
+            ->get()
+            ->groupBy('order_id');
 
-        foreach ($leads as $lead) {
+        foreach ($leadsByOrder as $orderId => $leads) {
+            // Get postcode from the first lead (all should be the same within an order)
+            $lead = $leads->first();
+            if (!$lead || !$lead->postcode) {
+                continue;
+            }
+
             try {
+                // Fetch coordinates only once per order
                 $coordinates = $this->googleGeocodingService->getCoordinates($lead->postcode);
 
                 if ($coordinates) {
-                    $lead->update([
+                    // Update all leads in this order with the same coordinates
+                    ProductLead::where('order_id', $orderId)->update([
                         'latitude' => $coordinates['latitude'],
                         'longitude' => $coordinates['longitude'],
                     ]);
@@ -39,7 +51,7 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
                     Log::warning("Coordinates not found for postcode: {$lead->postcode}");
                 }
             } catch (\Exception $e) {
-                Log::error("Error updating coordinates for lead ID {$lead->id}: {$e->getMessage()}");
+                Log::error("Error updating coordinates for order ID {$orderId}: {$e->getMessage()}");
             }
         }
     }
