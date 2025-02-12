@@ -3,6 +3,7 @@
 namespace Techquity\AeroProductLeads\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Collection;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Techquity\AeroProductLeads\Models\ProductLead;
@@ -11,7 +12,8 @@ class LeadEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $lead;
+    public $order;
+    public $orderItems;
     public $customerPhone;
     public $customerName;
     public $customerAddress;
@@ -22,52 +24,49 @@ class LeadEmail extends Mailable
      *
      * @param ProductLead $lead
      */
-    public function __construct(ProductLead $lead)
+    public function __construct($order, Collection $orderItems)
     {
-        $order = $lead->order;
+        $this->order = $order;
+        $this->orderItems = $orderItems;
         $shippingAddress = $order->shippingAddress;
-        $product = $lead->orderItem->buyable->product ?? null;
 
-        $this->lead = $lead;
-        $this->customerPhone = $shippingAddress->mobile 
-            ?? $shippingAddress->phone 
-            ?? '';
-
+        $this->customerPhone = $shippingAddress->mobile ?? $shippingAddress->phone ?? '';
         $this->customerName = $shippingAddress->full_name ?? 'Unknown Name';
 
-        // Build full address including line_1, line_2, and city
         $addressParts = array_filter([
             $shippingAddress->line_1 ?? null,
             $shippingAddress->line_2 ?? null,
             $shippingAddress->city ?? null
         ]);
 
-        $this->customerAddress = !empty($addressParts) 
-            ? implode(', ', $addressParts) 
-            : 'Unknown Address';
+        $this->customerAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'Unknown Address';
 
-        $this->subjectLine = $this->determineSubject($product);
+        $this->subjectLine = $this->determineSubject($orderItems);
     }
 
-    protected function determineSubject($product)
+    protected function determineSubject(Collection $orderItems)
     {
-        if (!$product) {
-            return 'New Product Lead';
-        }
-
-        // Get the configured lead-tags from settings
         $leadTags = setting('product-leads.lead-tags');
 
         if (!$leadTags || !$leadTags->count()) {
             return 'New Product Lead';
         }
 
-        // Find the first matching tag between the product and lead-tags setting
-        $matchingTag = $product->tags->intersect($leadTags)->first();
+        $foundTags = collect();
 
-        return $matchingTag 
-            ? "New {$matchingTag->name}" 
-            : 'New Product Lead';
+        foreach ($orderItems as $item) {
+            $product = $item->buyable->product ?? null;
+            if ($product) {
+                $matchingTags = $product->tags->intersect($leadTags)->pluck('name');
+                $foundTags = $foundTags->merge($matchingTags);
+            }
+        }
+
+        $foundTags = $foundTags->unique();
+
+        return $foundTags->count() === 1
+            ? "New {$foundTags->first()} Lead"
+            : 'New Product Leads';
     }
 
     /**

@@ -77,6 +77,9 @@ class ServiceProvider extends ModuleServiceProvider
             $group->eloquent('ignore-locations', Location::class)
                 ->hint('Locations that you do not want to use.')
                 ->multiple();
+            $group->boolean('merge-order-items')
+                ->hint('Merge all order items that have a lead tag, this means a single email will be sent per order.')
+                ->default(true);
             $group->boolean('fallback-email-enabled')
                 ->hint('If no store locations can be found for an order, send to a fallback email instead.')
                 ->default(true);

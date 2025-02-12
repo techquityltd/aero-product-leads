@@ -3,6 +3,7 @@
 namespace Techquity\AeroProductLeads\Jobs;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Collection;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -47,51 +48,63 @@ class SendLeadEmailsJob implements ShouldQueue
         bool $fallbackEnabled,
         ?string $fallbackEmail
     ) {
-        $leads = ProductLead::whereNull('email_sent_at')
-            ->where('created_at', '<=', $cutoffDate)
-            ->get();
 
-        foreach ($leads as $lead) {
+        $mergeOrderItems = setting('product-leads.merge-order-items');
 
-            // Check if latitude or longitude is missing
-            if (!$lead->latitude || !$lead->longitude) {
-                // If either is missing, set the recipient to the fallback email
-                if ($fallbackEnabled && $fallbackEmail) {
-                    $recipientEmail = $fallbackEmail;
-                    Mail::to($recipientEmail)->send(new LeadEmail($lead));
+        $leadsQuery = ProductLead::whereNull('email_sent_at')
+        ->where('created_at', '<=', $cutoffDate);
 
-                    // Update the lead with the fallback email
+        if ($mergeOrderItems) {
+            $leadsByOrder = $leadsQuery->get()->groupBy('order_id');
+    
+            foreach ($leadsByOrder as $orderId => $leads) {
+                $order = $leads->first()->order;
+                if (!$order) continue;
+    
+                $orderItems = $leads->pluck('orderItem')->unique(); // Get unique order items
+    
+                $recipientEmail = $this->resolveRecipientEmail($leads, $radius, $fallbackEnabled, $fallbackEmail);
+    
+                if ($recipientEmail) {
+                    Mail::to($recipientEmail)->send(new LeadEmail($order, $orderItems));
+    
+                    ProductLead::where('order_id', $orderId)->update([
+                        'email_sent_at' => now(),
+                        'location_email' => $recipientEmail
+                    ]);
+                }
+            }
+        } else {
+            // Existing per-lead email logic
+            foreach ($leadsQuery->get() as $lead) {
+                $recipientEmail = $this->resolveRecipientEmail(collect([$lead]), $radius, $fallbackEnabled, $fallbackEmail);
+    
+                if ($recipientEmail) {
+                    Mail::to($recipientEmail)->send(new LeadEmail($lead->order, collect([$lead->orderItem])));
+    
                     $lead->update([
                         'email_sent_at' => now(),
                         'location_email' => $recipientEmail
                     ]);
                 }
-                continue;
-            }
-
-            $nearestStoreEmail = $this->locationService->findNearestStore(
-                $lead->latitude,
-                $lead->longitude,
-                $radius
-            );
-
-            $recipientEmail = $nearestStoreEmail;
-
-            // Use fallback email if no store is found and fallback is enabled
-            if (!$recipientEmail && $fallbackEnabled) {
-                $recipientEmail = $fallbackEmail;
-            }
-
-            // Send the email if a recipient was determined
-            if ($recipientEmail) {
-
-                Mail::to($recipientEmail)->send(new LeadEmail($lead));
-
-                $lead->update([
-                    'email_sent_at' => now(),
-                    'location_email' => $recipientEmail
-                ]);
             }
         }
+    }
+
+    protected function resolveRecipientEmail(Collection $leads, int $radius, bool $fallbackEnabled, ?string $fallbackEmail)
+    {
+        // If merging order items, check the first lead (they all belong to the same order)
+        $lead = $leads->first();
+        
+        if (!$lead || !$lead->latitude || !$lead->longitude) {
+            return $fallbackEnabled ? $fallbackEmail : null;
+        }
+
+        // Find the nearest store based on the first lead with location data
+        return $this->locationService->findNearestStore(
+            $lead->latitude,
+            $lead->longitude,
+            $radius
+        ) ?? ($fallbackEnabled ? $fallbackEmail : null);
     }
 }
