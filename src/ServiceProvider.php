@@ -37,6 +37,7 @@ class ServiceProvider extends ModuleServiceProvider
 
     private function loadRoutes()
     {
+        Router::addStoreRoutes(__DIR__.'/../routes/store.php');
         Router::addAdminRoutes(__DIR__.'/../routes/admin.php');
     }
 
