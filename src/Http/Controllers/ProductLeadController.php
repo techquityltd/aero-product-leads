@@ -35,12 +35,10 @@ class ProductLeadController extends Controller
 
             // Find the nearest matching store email
             $locationEmail = Location::where('email', 'LIKE', "%$preferredBranch%")->value('email');
-        } else {
-            $locationEmail = setting('product-leads.fallback-email-enabled') ? setting('product-leads.fallback-email') : null;
         }
 
         if (!$locationEmail) {
-            return response()->json(['success' => false]);
+            $locationEmail = setting('product-leads.fallback-email-enabled') ? setting('product-leads.fallback-email') : null;
         }
 
         // // Save the product lead
