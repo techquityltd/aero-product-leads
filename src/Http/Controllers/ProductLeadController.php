@@ -43,8 +43,8 @@ class ProductLeadController extends Controller
 
         // // Save the product lead
         $productLead = ProductLead::create([
-            'order_item_id' => $request->itemId,
-            'postcode' => $request->fake-postcode,
+            'order_item_id' => $validated['itemId'],
+            'postcode' => $validated['fake-postcode'],
             'location_email' => $locationEmail,
         ]);
 
