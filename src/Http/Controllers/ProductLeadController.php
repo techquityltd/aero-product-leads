@@ -23,11 +23,11 @@ class ProductLeadController extends Controller
     {
         $validated = $request->validate([
             'variant_id' => 'required|integer|exists:variants,id',
-            'customer_email' => 'required|email|max:255',
-            'customer_name' => 'nullable|string|max:255',
-            'customer_phone' => 'nullable|string|max:20',
+            'email' => 'required|email|max:255',
+            'name' => 'nullable|string|max:255',
+            'telephone' => 'nullable|string|max:20',
             'postcode' => 'required|string|max:10',
-            'preferred_branch' => 'nullable|string|max:255',
+            // 'preferred_branch' => 'nullable|string|max:255',
         ]);
 
         // Format preferred branch to match email structure
@@ -44,9 +44,9 @@ class ProductLeadController extends Controller
         // Save the product lead
         $productLead = ProductLead::create([
             'variant_id' => $validated['variant_id'],
-            'customer_email' => $validated['customer_email'],
-            'customer_name' => $validated['customer_name'],
-            'customer_phone' => $validated['customer_phone'],
+            'customer_email' => $validated['email'],
+            'customer_name' => $validated['name'],
+            'customer_phone' => $validated['telephone'],
             'postcode' => $validated['postcode'],
             // 'location_email' => $locationEmail,
             'lead_type' => 'form',
