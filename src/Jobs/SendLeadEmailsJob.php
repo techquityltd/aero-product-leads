@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
 use Techquity\AeroProductLeads\Mail\LeadEmail;
+use Techquity\AeroProductLeads\Mail\FormLeadEmail;
 use Techquity\AeroProductLeads\Models\ProductLead;
 use Techquity\AeroProductLeads\Services\LocationService;
 
@@ -30,77 +31,81 @@ class SendLeadEmailsJob implements ShouldQueue
         $emailWaitTime = setting('product-leads.email-wait-time');
         $fallbackEnabled = setting('product-leads.fallback-email-enabled');
         $fallbackEmail = setting('product-leads.fallback-email');
-
-        $now = now();
-
-        // Handle leads for the first email
-        $this->processEmails(
-            $radius,
-            $now->copy()->subDays($emailWaitTime),
-            $fallbackEnabled,
-            $fallbackEmail
-        );
-    }
-
-    protected function processEmails(
-        int $radius,
-        \Carbon\Carbon $cutoffDate,
-        bool $fallbackEnabled,
-        ?string $fallbackEmail
-    ) {
-
         $mergeOrderItems = setting('product-leads.merge-order-items');
 
-        $leadsQuery = ProductLead::whereNull('email_sent_at')
-        ->where('created_at', '<=', $cutoffDate);
+        $cutoffDate = now()->subDays($emailWaitTime);
 
+        // Separate order and form leads
+        $orderLeads = ProductLead::whereNull('email_sent_at')
+            ->where('lead_type', 'order')
+            ->where('created_at', '<=', $cutoffDate)
+            ->get();
+
+        $formLeads = ProductLead::whereNull('email_sent_at')
+            ->where('lead_type', 'form')
+            ->where('created_at', '<=', $cutoffDate)
+            ->get();
+
+        // Handle order leads
         if ($mergeOrderItems) {
-            $leadsByOrder = $leadsQuery->get()->groupBy('order_id');
-    
-            foreach ($leadsByOrder as $orderId => $leads) {
+            $groupedByOrder = $orderLeads->groupBy('order_id');
+            foreach ($groupedByOrder as $orderId => $leads) {
                 $order = $leads->first()->order;
                 if (!$order) continue;
-    
-                $orderItems = $leads->pluck('orderItem')->unique(); // Get unique order items
-    
+
+                $orderItems = $leads->pluck('orderItem')->filter()->unique();
                 $recipientEmail = $this->resolveRecipientEmail($leads, $radius, $fallbackEnabled, $fallbackEmail);
-    
+
                 if ($recipientEmail) {
                     Mail::to($recipientEmail)->send(new LeadEmail($order, $orderItems));
-    
+
                     ProductLead::where('order_id', $orderId)->update([
                         'email_sent_at' => now(),
-                        'location_email' => $recipientEmail
+                        'location_email' => $recipientEmail,
                     ]);
                 }
             }
         } else {
-            // Existing per-lead email logic
-            foreach ($leadsQuery->get() as $lead) {
+            foreach ($orderLeads as $lead) {
+                $order = $lead->order;
+                if (!$order || !$lead->orderItem) continue;
+
                 $recipientEmail = $this->resolveRecipientEmail(collect([$lead]), $radius, $fallbackEnabled, $fallbackEmail);
-    
+
                 if ($recipientEmail) {
-                    Mail::to($recipientEmail)->send(new LeadEmail($lead->order, collect([$lead->orderItem])));
-    
+                    Mail::to($recipientEmail)->send(new LeadEmail($order, collect([$lead->orderItem])));
+
                     $lead->update([
                         'email_sent_at' => now(),
-                        'location_email' => $recipientEmail
+                        'location_email' => $recipientEmail,
                     ]);
                 }
             }
         }
+
+        // Handle form leads (one by one)
+        foreach ($formLeads as $lead) {
+            $recipientEmail = $this->resolveRecipientEmail(collect([$lead]), $radius, $fallbackEnabled, $fallbackEmail);
+
+            if ($recipientEmail) {
+                Mail::to($recipientEmail)->send(new FormLeadEmail($lead));
+
+                $lead->update([
+                    'email_sent_at' => now(),
+                    'location_email' => $recipientEmail,
+                ]);
+            }
+        }
     }
 
-    protected function resolveRecipientEmail(Collection $leads, int $radius, bool $fallbackEnabled, ?string $fallbackEmail)
+    protected function resolveRecipientEmail(Collection $leads, int $radius, bool $fallbackEnabled, ?string $fallbackEmail): ?string
     {
-        // If merging order items, check the first lead (they all belong to the same order)
         $lead = $leads->first();
-        
+
         if (!$lead || !$lead->latitude || !$lead->longitude) {
             return $fallbackEnabled ? $fallbackEmail : null;
         }
 
-        // Find the nearest store based on the first lead with location data
         return $this->locationService->findNearestStore(
             $lead->latitude,
             $lead->longitude,

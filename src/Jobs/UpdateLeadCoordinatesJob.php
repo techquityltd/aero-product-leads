@@ -24,34 +24,35 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
 
     public function handle()
     {
-        // Get leads grouped by order_id where no coordinates exist
-        $leadsByOrder = ProductLead::whereNull('latitude')
-            ->whereNull('longitude')
-            ->get()
-            ->groupBy('order_id');
+        // Get leads where latitude & longitude are missing
+        $leads = ProductLead::whereNull('latitude')->whereNull('longitude')->get();
 
-        foreach ($leadsByOrder as $orderId => $leads) {
-            // Get postcode from the first lead (all should be the same within an order)
+        // Group by order_id for order leads, variant_id for form leads
+        $groupedLeads = $leads->groupBy(function ($lead) {
+            return $lead->order_id ?? 'form-' . $lead->variant_id;
+        });
+
+        foreach ($groupedLeads as $key => $leads) {
             $lead = $leads->first();
             if (!$lead || !$lead->postcode) {
                 continue;
             }
 
             try {
-                // Fetch coordinates only once per order
+                // Fetch coordinates using postcode
                 $coordinates = $this->googleGeocodingService->getCoordinates($lead->postcode);
 
                 if ($coordinates) {
-                    // Update all leads in this order with the same coordinates
-                    ProductLead::where('order_id', $orderId)->update([
+                    // Update all leads in this group
+                    ProductLead::whereIn('id', $leads->pluck('id'))->update([
                         'latitude' => $coordinates['latitude'],
                         'longitude' => $coordinates['longitude'],
                     ]);
                 } else {
-                    Log::warning("Coordinates not found for postcode: {$lead->postcode}");
+                    Log::warning("Coordinates not found for postcode: {$lead->postcode} (Lead Type: " . ($lead->order_id ? 'Order' : 'Form') . ")");
                 }
             } catch (\Exception $e) {
-                Log::error("Error updating coordinates for order ID {$orderId}: {$e->getMessage()}");
+                Log::error("Error updating coordinates for lead group {$key}: {$e->getMessage()}");
             }
         }
     }

@@ -38,39 +38,48 @@ class ProductLeadResourceList extends AbstractResourceList
 
         return [
 
+            ResourceListColumn::create('Lead Type', function ($row) {
+                return ucfirst(str_replace('_', ' ', $row->lead_type ?? 'N/A'));
+            })
+            ->addClass('whitespace-no-wrap')
+            ->position($positionStart += $positionIncrement),
+
             ResourceListColumn::create('Order', function ($row) {
                 if ($row->order) {
                     return view('admin::resource-lists.link', [
-                        'route' => '/admin/orders/'.$row->order->id,
+                        'route' => '/admin/orders/' . $row->order->id,
                         'text' => $row->order->reference,
                     ]);
                 }
                 return view('admin::resource-lists.placeholder');
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
 
             ResourceListColumn::create('Lead Item SKU', function ($row) {
+                // Use order item if available, fallback to variant
                 if ($row->orderItem) {
                     return view('admin::resource-lists.link', [
-                        'route' => '/admin/catalog/products/'.$row->orderItem->buyable->id,
-                        'text' => $row->orderItem->sku . " (" . $row->orderItem->name . ")",
+                        'route' => '/admin/catalog/products/' . $row->orderItem->buyable->id,
+                        'text' => $row->orderItem->sku . ' (' . $row->orderItem->name . ')',
+                    ]);
+                } elseif ($row->variant) {
+                    return view('admin::resource-lists.link', [
+                        'route' => '/admin/catalog/products/' . $row->variant->product->id,
+                        'text' => $row->variant->sku . ' (' . $row->variant->product->name . ')',
                     ]);
                 }
+
                 return view('admin::resource-lists.placeholder');
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
 
             ResourceListColumn::create('Location Processed', function ($row) {
-                if (!empty($row->latitude) && !empty($row->longitude)) {
-                    return 'Yes';
-                } else {
-                    return 'No';
-                }
+                return (!empty($row->latitude) && !empty($row->longitude)) ? 'Yes' : 'No';
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
 
             ResourceListColumn::create('Email Sent', function ($row) {
                 if ($row->email_sent_at) {
@@ -82,33 +91,29 @@ class ProductLeadResourceList extends AbstractResourceList
                 }
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
 
             ResourceListColumn::create('Email Sent At', function ($row) {
-                if ($row->email_sent_at) {
-                    return $row->email_sent_at->format(setting('admin.short_date_format'));
-                } else {
-                    return '';
-                }
+                return $row->email_sent_at
+                    ? $row->email_sent_at->format(setting('admin.short_date_format'))
+                    : '';
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
 
             ResourceListColumn::create('Location Recipient', function ($row) {
                 return $row->location_email;
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
 
             ResourceListColumn::create('Created At', function ($row) {
-                if ($row->created_at) {
-                    return $row->created_at->format(setting('admin.short_date_format'));
-                } else {
-                    return '';
-                }
+                return $row->created_at
+                    ? $row->created_at->format(setting('admin.short_date_format'))
+                    : '';
             })
             ->addClass('whitespace-no-wrap')
-            ->position($positionStart = $positionStart + $positionIncrement),
+            ->position($positionStart += $positionIncrement),
         ];
     }
 

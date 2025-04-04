@@ -1,0 +1,37 @@
+<form id="leadForm">
+    <input type="hidden" name="variant_id" value="1234">
+    <input type="text" name="customer_name" placeholder="Your Name" required>
+    <input type="email" name="customer_email" placeholder="Your Email" required>
+    <input type="text" name="customer_phone" placeholder="Phone">
+    <input type="text" name="postcode" placeholder="Postcode" required>
+    {# <input type="text" name="preferred_branch" placeholder="Preferred Branch"> #}
+    <button type="submit">Submit</button>
+</form>
+
+<script>
+document.getElementById('leadForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch('/product-leads/form', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(json => {
+        if (json.success) {
+            alert('Lead submitted successfully!');
+        } else {
+            alert('Something went wrong.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Submission failed.');
+    });
+});
+</script>

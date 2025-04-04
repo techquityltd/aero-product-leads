@@ -22,32 +22,37 @@ class ProductLeadController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'itemId' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'telephone' => 'nullable|string|max:20',
-            'fake-postcode' => 'nullable|string|max:10',
-            'preferred-branch' => 'nullable|string|max:255',
+            'variant_id' => 'required|integer|exists:variants,id',
+            'customer_email' => 'required|email|max:255',
+            'customer_name' => 'nullable|string|max:255',
+            'customer_phone' => 'nullable|string|max:20',
+            'postcode' => 'required|string|max:10',
+            'preferred_branch' => 'nullable|string|max:255',
         ]);
 
-        // Format preferred branch to match the email structure
-        if (!empty($validated['preferred-branch'])) {
-            $preferredBranch = strtolower(str_replace(' ', '-', $validated['preferred-branch']));
+        // Format preferred branch to match email structure
+        // $locationEmail = null;
+        // if (!empty($validated['preferred_branch'])) {
+        //     $preferredBranch = strtolower(str_replace(' ', '-', $validated['preferred_branch']));
+        //     $locationEmail = Location::where('email', 'LIKE', "%$preferredBranch%")->value('email');
+        // }
 
-            // Find the nearest matching store email
-            $locationEmail = Location::where('email', 'LIKE', "%$preferredBranch%")->value('email');
-        }
+        // if (!$locationEmail) {
+        //     $locationEmail = setting('product-leads.fallback-email-enabled') ? setting('product-leads.fallback-email') : null;
+        // }
 
-        if (!$locationEmail) {
-            $locationEmail = setting('product-leads.fallback-email-enabled') ? setting('product-leads.fallback-email') : null;
-        }
-
-        // // Save the product lead
+        // Save the product lead
         $productLead = ProductLead::create([
-            'order_item_id' => $validated['itemId'],
-            'postcode' => $validated['fake-postcode'],
-            'location_email' => $locationEmail,
+            'variant_id' => $validated['variant_id'],
+            'customer_email' => $validated['customer_email'],
+            'customer_name' => $validated['customer_name'],
+            'customer_phone' => $validated['customer_phone'],
+            'postcode' => $validated['postcode'],
+            // 'location_email' => $locationEmail,
+            'lead_type' => 'form',
         ]);
 
         return response()->json(['success' => true]);
     }
+
 }
