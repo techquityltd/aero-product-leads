@@ -134,7 +134,7 @@ class ProductLeadResourceList extends AbstractResourceList
     {
         return [
             ResourceListSortBy::create(null, function ($_, $query) {
-                return $query->orderByDesc('order_id');
+                return $query->orderByDesc('id');
             }),
 
             ResourceListSortBy::create([
