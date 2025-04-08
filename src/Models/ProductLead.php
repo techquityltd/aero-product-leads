@@ -16,6 +16,7 @@ class ProductLead extends Model
         'postcode',
         'customer_email',
         'customer_name',
+        'customer_phone',
         'lead_type',
         'latitude',
         'longitude',
