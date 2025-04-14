@@ -98,10 +98,10 @@ The following POST parameters must be submitted:
 | Field              | Type     | Required | Description                          |
 |-------------------|----------|----------|--------------------------------------|
 | `variant_id`       | string   | ✅        | The SKU or ID of the product variant |
+| `postcode`         | string   | ✅        | Postcode used for location match     |
 | `email`            | string   | ❌        | Customer’s email address             |
 | `name`             | string   | ❌        | Customer’s full name                 |
 | `telephone`        | string   | ❌        | Customer’s phone number              |
-| `postcode`         | string   | ✅        | Postcode used for location match     |
 
 ### Example AJAX Submission
 
