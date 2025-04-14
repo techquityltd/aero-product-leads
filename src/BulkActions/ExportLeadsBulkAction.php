@@ -52,7 +52,7 @@ class ExportLeadsBulkAction extends BulkActionJob
             $row = array_merge($csvHeadings, array_intersect_key([
                 'Lead Type' => $lead->lead_type,
                 'Order' => optional($lead->order)->reference,
-                'Lead Item SKU' => $lead->orderItem->sku,
+                'Lead Item SKU' => isset($row->orderItem) ? $lead->orderItem->sku : $row->variant->sku ?? '',
                 'Email Sent At' => $lead->email_sent_at,
                 'Location Recipient' => $lead->location_email,
                 'Created At' => $lead->created_at
