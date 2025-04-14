@@ -27,13 +27,8 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
         // Get leads where latitude & longitude are missing
         $leads = ProductLead::whereNull('latitude')->whereNull('longitude')->get();
 
-        // Group by order_id for order leads, variant_id for form leads
-        $groupedLeads = $leads->groupBy(function ($lead) {
-            return $lead->order_id ?? 'form-' . $lead->variant_id;
-        });
+        foreach ($leads as $key => $lead) {
 
-        foreach ($groupedLeads as $key => $leads) {
-            $lead = $leads->first();
             if (!$lead || !$lead->postcode) {
                 continue;
             }
@@ -43,13 +38,13 @@ class UpdateLeadCoordinatesJob implements ShouldQueue
                 $coordinates = $this->googleGeocodingService->getCoordinates($lead->postcode);
 
                 if ($coordinates) {
-                    // Update all leads in this group
-                    ProductLead::whereIn('id', $leads->pluck('id'))->update([
-                        'latitude' => $coordinates['latitude'],
-                        'longitude' => $coordinates['longitude'],
-                    ]);
+                    // Update lead
+                    $lead->latitude = $coordinates['latitude'];
+                    $lead->longitude = $coordinates['longitude'];
+
+                    $lead->save();
                 } else {
-                    Log::warning("Coordinates not found for postcode: {$lead->postcode} (Lead Type: " . ($lead->order_id ? 'Order' : 'Form') . ")");
+                    Log::warning("Coordinates not found for postcode: {$lead->postcode} (Lead Type: {$lead->lead_type})");
                 }
             } catch (\Exception $e) {
                 Log::error("Error updating coordinates for lead group {$key}: {$e->getMessage()}");
