@@ -49,7 +49,7 @@ class ExportLeadsBulkAction extends BulkActionJob
         // Write lead data
         foreach ($this->list->items() as $lead) {
             $row = array_merge($csvHeadings, array_intersect_key([
-                'Order' => $lead->order->reference,
+                'Order' => optional($lead->order)->reference,
                 'Lead Item SKU' => $lead->orderItem->sku,
                 'Email Sent At' => $lead->email_sent_at,
                 'Location Recipient' => $lead->location_email,
